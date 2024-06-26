@@ -1,0 +1,26 @@
+BaseURL = 'https://www.hanshuai.online/'
+languageCode = 'en-us'
+title = '韓小han'
+theme = 'hugo-theme-cleanwhite'
+relativeurls = true
+
+[Menus]
+  main = [
+      {Name = "Github", URL = "https://github.com/lettlehan/"}
+  ]
+
+[params]
+    themeColor = "theme-base-0e"
+    description = '韓小han 的博客'
+
+[params.giscus]
+data_repo="lettlehan/blog-discussion"
+data_repo_id="R_kgDOMN6xNw"
+data_category="Announcements"
+data_category_id="DIC_kwDOMN6xN84CgXV9"
+data_mapping="pathname"
+data_reactions_enabled="1"
+data_emit_metadata="0"
+data_theme="light"
+data_lang="en"
+crossorigin="anonymous"

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on 韓小han</title>
+    <link>http://localhost:1313/post/</link>
+    <description>Recent content in Posts on 韓小han</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 26 Jun 2024 22:02:17 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Demo</title>
+      <link>http://localhost:1313/post/demo/</link>
+      <pubDate>Wed, 26 Jun 2024 22:02:17 +0800</pubDate>
+      <guid>http://localhost:1313/post/demo/</guid>
+      <description>demo 1.1 1.1.1 2 2.1 2.1.1 2.2 2.2.1 </description>
+    </item>
+    <item>
+      <title>HelloWorld</title>
+      <link>http://localhost:1313/post/helloworld/</link>
+      <pubDate>Tue, 25 Jun 2024 19:41:32 +0800</pubDate>
+      <guid>http://localhost:1313/post/helloworld/</guid>
+      <description>HelloWorld welcome </description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,12 @@
+[submodule "themes/hyde"]
+	path = themes/hyde
+	url = https://github.com/spf13/hyde.git
+[submodule "themes/hugo-bootstrap-theme"]
+	path = themes/hugo-bootstrap-theme
+	url = git@github.com:filipecarneiro/hugo-bootstrap-theme.git
+[submodule "themes/hugo-theme-stack"]
+	path = themes/hugo-theme-stack
+	url = git@github.com:CaiJimmy/hugo-theme-stack.git
+[submodule "themes/hugo-theme-cleanwhite"]
+	path = themes/hugo-theme-cleanwhite
+	url = git@github.com:zhaohuabing/hugo-theme-cleanwhite.git
