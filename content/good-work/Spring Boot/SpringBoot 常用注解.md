@@ -1,11 +1,11 @@
-## 1. SpringBoot 常用注解  
-  
-Spring Boot大量使用注解来简化配置和开发，这些注解背后有着复杂的实现机制。  
-  
-### 1.1. 核心注解源码分析  
-  
-#### 1.1.1 @SpringBootApplication  
-  
+## 1. SpringBoot 常用注解
+
+Spring Boot大量使用注解来简化配置和开发，这些注解背后有着复杂的实现机制。
+
+### 1.1. 核心注解源码分析
+
+#### 1.1.1 @SpringBootApplication
+
 ```java  
 @Target(ElementType.TYPE)  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -24,15 +24,15 @@ public @interface SpringBootApplication {
     @AliasFor(annotation = ComponentScan.class, attribute = "basePackageClasses")    Class<?>[] scanBasePackageClasses() default {};    // 是否代理目标类  
     @AliasFor(annotation = Configuration.class)    boolean proxyBeanMethods() default true;}  
 ```  
-  
-**@SpringBootApplication注解原理**：  
-  
-1. `@SpringBootConfiguration`：标识这是一个Spring Boot配置类，本质上是`@Configuration`注解  
-2. `@EnableAutoConfiguration`：启用Spring Boot的自动配置机制  
-3. `@ComponentScan`：启用组件扫描，自动发现和注册Bean  
-  
-#### 1.1.2 @EnableAutoConfiguration  
-  
+
+**@SpringBootApplication注解原理**：
+
+1. `@SpringBootConfiguration`：标识这是一个Spring Boot配置类，本质上是`@Configuration`注解
+2. `@EnableAutoConfiguration`：启用Spring Boot的自动配置机制
+3. `@ComponentScan`：启用组件扫描，自动发现和注册Bean
+
+#### 1.1.2 @EnableAutoConfiguration
+
 ```java  
 @Target(ElementType.TYPE)  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -45,9 +45,9 @@ public @interface EnableAutoConfiguration {
     Class<?>[] exclude() default {};    // 排除特定的自动配置类名  
     String[] excludeName() default {};}  
 ```  
-  
-**AutoConfigurationImportSelector源码分析**：  
-  
+
+**AutoConfigurationImportSelector源码分析**：
+
 ```java  
 public class AutoConfigurationImportSelector implements DeferredImportSelector {  
     @Override    public String[] selectImports(AnnotationMetadata annotationMetadata) {        // 加载自动配置元数据  
@@ -66,11 +66,11 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector {
         configurations = getConfigurationClassFilter().filter(configurations);        // 触发自动配置导入事件  
         fireAutoConfigurationImportEvents(configurations, exclusions);        return new AutoConfigurationEntry(configurations, exclusions);    }}  
 ```  
-  
-### 1.2. 依赖注入注解原理  
-  
-#### 1.2.1 @Autowired  
-  
+
+### 1.2. 依赖注入注解原理
+
+#### 1.2.1 @Autowired
+
 ```java  
 @Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD, ElementType.ANNOTATION_TYPE})  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -78,9 +78,9 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector {
 public @interface Autowired {  
     boolean required() default true;}  
 ```  
-  
-**AutowiredAnnotationBeanPostProcessor源码分析**：  
-  
+
+**AutowiredAnnotationBeanPostProcessor源码分析**：
+
 ```java  
 public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor, BeanFactoryAware {  
     // 处理@Autowired注解的核心方法  
@@ -92,9 +92,9 @@ public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor, 
                     if (metadata != null) {                        metadata.clear(pvs);                    }                    // 构建新的元数据  
                     metadata = buildAutowiringMetadata(clazz);                    this.injectionMetadataCache.put(cacheKey, metadata);                }            }        }        return metadata;    }}  
 ```  
-  
-#### 1.2.2 @Value  
-  
+
+#### 1.2.2 @Value
+
 ```java  
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -102,16 +102,16 @@ public class AutowiredAnnotationBeanPostProcessor implements BeanPostProcessor, 
 public @interface Value {  
     String value();}  
 ```  
-  
-**@Value注解处理流程**：  
-  
-1. 由`AutowiredAnnotationBeanPostProcessor`处理  
-2. 解析表达式，支持`${property}`和`#{spEL}`格式  
-3. 通过`PropertySourcesPlaceholderConfigurer`解析属性占位符  
-4. 通过`SpelExpressionParser`解析SpEL表达式  
-  
-#### 1.2.3 @Resource和@Qualifier  
-  
+
+**@Value注解处理流程**：
+
+1. 由`AutowiredAnnotationBeanPostProcessor`处理
+2. 解析表达式，支持`${property}`和`#{spEL}`格式
+3. 通过`PropertySourcesPlaceholderConfigurer`解析属性占位符
+4. 通过`SpelExpressionParser`解析SpEL表达式
+
+#### 1.2.3 @Resource和@Qualifier
+
 ```java  
 @Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD})  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -126,22 +126,22 @@ public @interface Resource {
 public @interface Qualifier {  
     String value() default "";}  
 ```  
-  
-**依赖注入处理流程**：  
-  
-1. `@Resource`：  
-   - 由`CommonAnnotationBeanPostProcessor`处理  
-   - 优先按名称注入，其次按类型注入  
-  
-2. `@Qualifier`：  
-   - 与`@Autowired`配合使用  
-   - 指定注入Bean的限定符  
-   - 解决同类型多Bean的注入问题  
-  
-### 1.3. Bean 配置注解原理  
-  
-#### 1.3.1 @Component及其派生注解  
-  
+
+**依赖注入处理流程**：
+
+1. `@Resource`：
+    - 由`CommonAnnotationBeanPostProcessor`处理
+    - 优先按名称注入，其次按类型注入
+
+2. `@Qualifier`：
+    - 与`@Autowired`配合使用
+    - 指定注入Bean的限定符
+    - 解决同类型多Bean的注入问题
+
+### 1.3. Bean 配置注解原理
+
+#### 1.3.1 @Component及其派生注解
+
 ```java  
 @Target(ElementType.TYPE)  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -150,13 +150,13 @@ public @interface Qualifier {
 public @interface Component {  
     String value() default "";}  
 ```  
-  
-**@Component注解处理流程**：  
-  
-1. 由`ClassPathBeanDefinitionScanner`扫描带有@Component注解的类  
-2. 创建对应的`BeanDefinition`  
-3. 注册到`BeanFactory`中  
-  
+
+**@Component注解处理流程**：
+
+1. 由`ClassPathBeanDefinitionScanner`扫描带有@Component注解的类
+2. 创建对应的`BeanDefinition`
+3. 注册到`BeanFactory`中
+
 ```java  
 // ClassPathBeanDefinitionScanner核心源码  
 protected Set<BeanDefinitionHolder> doScan(String... basePackages) {  
@@ -170,9 +170,9 @@ protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
                 definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(                        scopeMetadata, definitionHolder, this.registry);                beanDefinitions.add(definitionHolder);                // 注册bean定义  
                 registerBeanDefinition(definitionHolder, this.registry);            }        }    }    return beanDefinitions;}  
 ```  
-  
-#### 1.3.2 派生注解  
-  
+
+#### 1.3.2 派生注解
+
 ```java  
 @Target({ElementType.TYPE})  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -203,11 +203,11 @@ public @interface Controller {
 public @interface RestController {  
     @AliasFor(annotation = Controller.class)    String value() default "";}  
 ```  
-  
-### 1.4. AOP 相关注解原理  
-  
-#### 1.4.1 @Aspect和@Pointcut  
-  
+
+### 1.4. AOP 相关注解原理
+
+#### 1.4.1 @Aspect和@Pointcut
+
 ```java  
 @Target(ElementType.TYPE)  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -221,9 +221,9 @@ public @interface Aspect {
 public @interface Pointcut {  
     String value();    String argNames() default "";}  
 ```  
-  
-**AspectJ注解处理流程**：  
-  
+
+**AspectJ注解处理流程**：
+
 ```java  
 // AnnotationAwareAspectJAutoProxyCreator核心源码  
 @Override  
@@ -236,9 +236,9 @@ protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName
     List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);    extendAdvisors(eligibleAdvisors);    if (!eligibleAdvisors.isEmpty()) {        // 排序  
         eligibleAdvisors = sortAdvisors(eligibleAdvisors);    }    return eligibleAdvisors;}  
 ```  
-  
-#### 1.4.2 通知注解(@Before, @After, @Around等)  
-  
+
+#### 1.4.2 通知注解(@Before, @After, @Around等)
+
 ```java  
 @Target({ElementType.METHOD})  
 @Retention(RetentionPolicy.RUNTIME)  
@@ -258,11 +258,11 @@ public @interface After {
 public @interface Around {  
     String value();    String argNames() default "";}  
 ```  
-  
-**通知注解处理流程**：  
-  
-1. 由`AnnotationAwareAspectJAutoProxyCreator`处理  
-2. 识别所有的@Aspect注解类  
-3. 解析切点表达式和通知方法  
-4. 创建代理对象，拦截方法调用  
+
+**通知注解处理流程**：
+
+1. 由`AnnotationAwareAspectJAutoProxyCreator`处理
+2. 识别所有的@Aspect注解类
+3. 解析切点表达式和通知方法
+4. 创建代理对象，拦截方法调用
 5. 按照通知类型和优先级执行通知方法

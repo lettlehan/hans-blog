@@ -1,11 +1,11 @@
-## 1. SpringBoot 的 Listener 机制与事件  
-  
-Spring Boot的事件机制是基于Spring框架的`ApplicationEvent`和`ApplicationListener`接口扩展而来，提供了应用生命周期中各个阶段的事件通知。  
-  
-### 1.1. 事件发布机制源码分析  
-  
-Spring Boot事件发布的核心是`SpringApplicationRunListeners`类，它封装了所有的`SpringApplicationRunListener`实现：  
-  
+## 1. SpringBoot 的 Listener 机制与事件
+
+Spring Boot的事件机制是基于Spring框架的`ApplicationEvent`和`ApplicationListener`接口扩展而来，提供了应用生命周期中各个阶段的事件通知。
+
+### 1.1. 事件发布机制源码分析
+
+Spring Boot事件发布的核心是`SpringApplicationRunListeners`类，它封装了所有的`SpringApplicationRunListener`实现：
+
 ```java  
 // SpringApplicationRunListeners.java 核心源码  
 class SpringApplicationRunListeners {  
@@ -25,32 +25,32 @@ class SpringApplicationRunListeners {
     void failed(ConfigurableApplicationContext context, Throwable exception) {        doWithListeners("spring.boot.application.failed",            (listener) -> callFailedListener(listener, context, exception));  
     }}  
 ```  
-  
-### 1.2. 核心事件与触发时机  
-  
-| 事件类型 | 触发时机 | 源码位置 | 用途 |  
-|----------|----------|----------|------|  
-| `ApplicationStartingEvent` | 启动开始 | `SpringApplication.run()` 开始 | 进行早期初始化 |  
-| `ApplicationEnvironmentPreparedEvent` | 环境准备完成 | `prepareEnvironment()` 方法中 | 配置环境变量 |  
-| `ApplicationContextInitializedEvent` | 上下文初始化 | `prepareContext()` 方法中 | 初始化操作 |  
-| `ApplicationPreparedEvent` | Bean 定义加载完成 | `prepareContext()` 方法末尾 | 预处理 |  
-| `ApplicationStartedEvent` | 上下文刷新完成 | `refreshContext()` 之后 | 启动后处理 |  
-| `ApplicationReadyEvent` | 应用准备就绪 | `callRunners()` 之后 | 最终处理 |  
-| `ApplicationFailedEvent` | 启动失败 | 捕获异常处理中 | 失败处理 |  
-  
-### 1.3. 事件监听器实现方式  
-  
-#### 1.3.1 实现ApplicationListener接口  
-  
+
+### 1.2. 核心事件与触发时机
+
+| 事件类型                                  | 触发时机        | 源码位置                         | 用途      |  
+|---------------------------------------|-------------|------------------------------|---------|  
+| `ApplicationStartingEvent`            | 启动开始        | `SpringApplication.run()` 开始 | 进行早期初始化 |  
+| `ApplicationEnvironmentPreparedEvent` | 环境准备完成      | `prepareEnvironment()` 方法中   | 配置环境变量  |  
+| `ApplicationContextInitializedEvent`  | 上下文初始化      | `prepareContext()` 方法中       | 初始化操作   |  
+| `ApplicationPreparedEvent`            | Bean 定义加载完成 | `prepareContext()` 方法末尾      | 预处理     |  
+| `ApplicationStartedEvent`             | 上下文刷新完成     | `refreshContext()` 之后        | 启动后处理   |  
+| `ApplicationReadyEvent`               | 应用准备就绪      | `callRunners()` 之后           | 最终处理    |  
+| `ApplicationFailedEvent`              | 启动失败        | 捕获异常处理中                      | 失败处理    |  
+
+### 1.3. 事件监听器实现方式
+
+#### 1.3.1 实现ApplicationListener接口
+
 ```java  
 @Component  
 public class MyListener implements ApplicationListener<ApplicationStartedEvent> {  
     @Override    public void onApplicationEvent(ApplicationStartedEvent event) {        // 处理逻辑  
     }}  
 ```  
-  
-#### 1.3.2 使用@EventListener注解  
-  
+
+#### 1.3.2 使用@EventListener注解
+
 ```java  
 @Component  
 public class AnnotationBasedEventListener {  
@@ -59,9 +59,9 @@ public class AnnotationBasedEventListener {
     public void handleConditionalEvent(ApplicationEnvironmentPreparedEvent event) {        // 条件处理逻辑  
     }}  
 ```  
-  
-#### 1.3.3 监听器注册源码分析  
-  
+
+#### 1.3.3 监听器注册源码分析
+
 ```java  
 // EventPublishingRunListener.java 核心源码  
 public class EventPublishingRunListener implements SpringApplicationRunListener {  
@@ -73,9 +73,9 @@ public class EventPublishingRunListener implements SpringApplicationRunListener 
         this.initialMulticaster.multicastEvent(                new ApplicationStartingEvent(bootstrapContext, this.application, this.args));    }    // 其他事件发布方法...  
 }  
 ```  
-  
-### 1.4. 自定义事件示例  
-  
+
+### 1.4. 自定义事件示例
+
 ```java  
 // 1. 定义自定义事件  
 public class MyCustomEvent extends ApplicationEvent {  
