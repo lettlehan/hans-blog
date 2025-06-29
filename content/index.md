@@ -20,8 +20,8 @@ tags:
 
 你可以通过以下方式联系我：
 
-- 📧 **电子邮件**: [Hanhshuai@163.com](mailto:Hanhshuai@163.com)
-- 📱 **联系电话**: 15209289362
+- 📧 **电子邮件**: [anhshuai@163.com](mailto:anhshuai@163.com)
+- 📧 **电子邮件**: [hanshuai0223@gmail.com](mailto:hanshuai0223@gmail.com)
 
 ---
 
