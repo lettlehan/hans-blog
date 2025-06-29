@@ -24,56 +24,18 @@ if (obj instanceof String str) {
 }
 ```
 
-## 2. 类型模式匹配
-
-### 2.1 基本模式
-
-```java
-public void process(Object obj) {
-    if (obj instanceof Integer i && i > 0) {
-        System.out.println("正整数: " + i);
-    }
-}
-```
-
-### 2.2 switch表达式结合（JDK21+）
-
-```java
-String formatted = switch (obj) {
-    case Integer i -> String.format("int %d", i);
-    case Long l    -> String.format("long %d", l);
-    case null      -> "null";
-    default        -> obj.toString();
-};
-```
-
-## 3. 性能分析 {#performance}
+## 3. 性能分析 
 
 ### 3.1 字节码对比
+
+**不同方式的性能表现**
 
 | 方式                | 字节码指令数 | 性能影响 |
 |---------------------|-------------|---------|
 | 传统instanceof      | 5-7         | 较高     |
 | 模式匹配            | 3-5         | 较低     |
 
-### 3.2 优化建议
-
-1. **优先使用模式匹配语法**：减少类型转换操作
-2. **避免多层嵌套检查**：改用switch表达式简化逻辑
-3. **缓存频繁检查结果**：对热点路径考虑缓存instanceof结果
-
 ## 4. 最佳实践
-
-### 4.1 防御性编程
-
-```java
-public void safeProcess(Object obj) {
-    if (!(obj instanceof Number num)) {
-        throw new IllegalArgumentException("需要数字类型");
-    }
-    // 使用num...
-}
-```
 
 ### 4.2 模式变量作用域
 
@@ -85,84 +47,9 @@ if (obj instanceof String s1) {
 }
 ```
 
-## 5. 常见陷阱
+## 5. 版本兼容性
 
-### 5.1 空值处理
-
-```java
-// 传统安全写法
-if (obj != null && obj instanceof String s) {
-    // ...
-}
-
-// JDK16+简化写法
-if (obj instanceof String s) {
-    // 自动处理null
-}
-```
-
-### 5.2 模式变量遮蔽
-
-```java
-String s = "外部";
-if (obj instanceof String s) {  // 编译错误
-    // 变量名s被遮蔽
-}
-```
-
-## 6. 高级用法
-
-### 6.1 记录模式（JDK21+）
-
-```java
-record Point(int x, int y) {}
-
-if (obj instanceof Point(int x, int y)) {
-    System.out.println(x + "," + y);
-}
-```
-
-### 6.2 泛型类型检查
-
-```java
-public <T> void checkList(Object obj) {
-    if (obj instanceof List<?> list) {
-        // 原始类型检查
-    }
-    if (obj instanceof List<String> list) {
-        // 具体类型检查（运行时擦除）
-    }
-}
-```
-
-## 7. 实际案例
-
-### 7.1 解析JSON节点
-
-```java
-public void parseJson(JsonNode node) {
-    if (node instanceof ObjectNode objNode) {
-        // 处理对象节点
-    } else if (node instanceof ArrayNode arrNode) {
-        // 处理数组节点
-    }
-}
-```
-
-### 7.2 处理异构集合
-
-```java
-List<Object> mixedList = ...;
-for (Object item : mixedList) {
-    if (item instanceof String s) {
-        processString(s);
-    } else if (item instanceof Number n) {
-        processNumber(n);
-    }
-}
-```
-
-## 8. 版本兼容性
+**各版本特性支持**
 
 | JDK版本 | 特性支持               |
 |--------|-----------------------|
@@ -171,8 +58,9 @@ for (Object item : mixedList) {
 | 21+    | switch模式匹配         |
 | 21+    | 记录模式               |
 
-{{< details "点击查看实现原理" >}}
+<details>
+<summary>点击查看实现原理</summary>
 instanceof的实现依赖于Java虚拟机的checkcast指令，模式匹配在编译阶段会进行类型推断和变量绑定优化。
-{{< /details >}}
+</details>
 
-{{< button href="#performance" >}}跳转到性能分析{{< /button >}}
+[跳转到性能分析](#performance)

@@ -1,195 +1,187 @@
-## 1. SPI 机制概述
+---
+title: Spring与JDK SPI机制深度解析
+date: {{ .Date }}
+tags: [Spring, JDK, SPI, 设计模式]
+description: 全面对比分析JDK SPI与Spring SPI实现原理、应用场景和最佳实践
+toc: true
+---
 
-SPI（Service Provider Interface）是一种服务发现机制，允许框架或库定义接口，而由第三方提供实现。核心思想是**接口与实现分离**
-，实现**可插拔**的架构设计。
+## 1. 核心概念
 
-```mermaid  
-graph TD  
-    A[服务接口] --> B[实现1]  
-    A --> C[实现2]  
-    A --> D[实现3]  
-```  
+### 1.1 SPI机制原理
 
-## 2. JDK SPI 机制
+<div class="grid cards" markdown>
 
-### 2.1 基本原理
+-   **核心思想**
+    - 接口与实现分离
+    - 运行时动态发现
+    - 可插拔架构
 
-JDK内置的SPI机制通过`java.util.ServiceLoader`类实现，核心流程：
+-   **典型应用**
+    - JDBC驱动加载
+    - Spring Boot自动配置
+    - 日志门面实现
 
-1. 在`META-INF/services/`目录下创建以接口全限定名命名的文件
-2. 文件中写入实现类的全限定名
-3. 通过`ServiceLoader.load()`方法加载实现
+</div>
 
-### 2.2 实现示例
+### 1.2 工作机制对比
 
-**接口定义**：
+```mermaid
+flowchart LR
+    JDK[JDK SPI] -->|ServiceLoader| services[META-INF/services/]
+    Spring[Spring SPI] -->|SpringFactoriesLoader| factories[META-INF/spring.factories]
+```
 
-```java  
-public interface DatabaseDriver {  
-    String connect(String url);    String disconnect();}  
-```  
+## 2. JDK SPI实现
+
+### 2.1 基础实现
+
+**接口定义示例**：
+```java
+public interface Serializer {
+    byte[] serialize(Object obj);
+    <T> T deserialize(byte[] bytes);
+}
+```
+
+**配置文件位置**：
+```
+META-INF/services/com.example.Serializer
+```
+
+<details>
+<summary>点击查看完整示例</summary>
 
 **实现类**：
-
-```java  
-public class MysqlDriver implements DatabaseDriver {  
-    @Override    public String connect(String url) {        return "MySQL connected to " + url;    }        @Override  
-    public String disconnect() {        return "MySQL disconnected";    }}  
-```  
-
-**配置文件**：
-
-```  
-# META-INF/services/com.example.DatabaseDriver  
-com.example.MysqlDriver  
-com.example.OracleDriver  
-```  
+```java
+public class JsonSerializer implements Serializer {
+    public byte[] serialize(Object obj) {
+        // JSON序列化实现
+    }
+}
+```
 
 **使用方式**：
+```java
+ServiceLoader<Serializer> loader = ServiceLoader.load(Serializer.class);
+loader.forEach(serializer -> {...});
+```
+</details>
 
-```java  
-ServiceLoader<DatabaseDriver> drivers = ServiceLoader.load(DatabaseDriver.class);  
-for (DatabaseDriver driver : drivers) {  
-    System.out.println(driver.connect("jdbc:mysql://localhost"));}  
-```  
+## 3. Spring SPI增强
 
-### 2.3 JDK SPI 特点
+### 3.1 核心改进
 
-| 特性   | 说明        |  
-|------|-----------|  
-| 加载方式 | 延迟加载      |  
-| 线程安全 | 非线程安全     |  
-| 配置方式 | 文本文件      |  
-| 实现获取 | 迭代器模式     |  
-| 性能   | 每次调用都重新加载 |  
+<div class="grid cards" markdown>
 
-## 3. Spring SPI 机制
+-   **性能优化**
+    - 配置缓存机制
+    - 避免重复加载
+    - 预初始化支持
 
-### 3.1 基本原理
+-   **功能扩展**
+    - 批量加载实现
+    - 排序支持
+    - 条件过滤
 
-Spring的SPI机制通过`SpringFactoriesLoader`实现，核心改进：
+</div>
 
-1. 配置文件路径：`META-INF/spring.factories`
-2. 支持批量加载
-3. 缓存机制提升性能
+### 3.2 Spring Boot应用
 
-### 3.2 实现示例
+**自动配置示例**：
+```properties
+# META-INF/spring.factories
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.example.MyAutoConfiguration
+```
 
-**配置文件**：
+**自定义扩展点**：
+```java
+public interface MyServiceProvider {
+    String provideService();
+}
+```
 
-```properties  
-# META-INF/spring.factories  
-com.example.DatabaseDriver=\  
-  com.example.MysqlDriver,\  com.example.PostgresDriver  
-```  
+## 4. 深度对比
 
-**使用方式**：
+| 维度         | JDK SPI                  | Spring SPI               |
+|--------------|--------------------------|--------------------------|
+| **加载方式**   | 延迟加载                  | 预加载+缓存               |
+| **配置格式**   | 纯文本                    | Properties格式           |
+| **线程安全**   | 非线程安全                | 线程安全                  |
+| **排序支持**   | 无                       | 通过@Order支持            |
+| **适用场景**   | 标准Java环境              | Spring生态系统           |
 
-```java  
-List<DatabaseDriver> drivers = SpringFactoriesLoader.loadFactories(  
-    DatabaseDriver.class, classLoader);  
-```  
+## 5. 生产实践
 
-### 3.3 Spring SPI 特点
+### 5.1 最佳实践
 
-| 特性   | 说明           |  
-|------|--------------|  
-| 加载方式 | 预加载+缓存       |  
-| 线程安全 | 线程安全         |  
-| 配置方式 | Properties文件 |  
-| 实现获取 | 直接返回List     |  
-| 性能   | 首次加载后缓存      |  
+1. **接口设计**：
+   ```java
+   // 明确扩展点契约
+   public @FunctionalInterface interface Filter {
+       boolean accept(Request request);
+   }
+   ```
 
-## 4. 对比分析
+2. **实现规范**：
+   ```java
+   // 提供无参构造
+   public class IpFilter implements Filter {
+       public boolean accept(Request req) {
+           // 实现逻辑
+       }
+   }
+   ```
 
-| 特性   | JDK SPI            | Spring SPI                |  
-|------|--------------------|---------------------------|  
-| 配置文件 | META-INF/services/ | META-INF/spring.factories |  
-| 文件格式 | 每行一个实现类            | Properties格式              |  
-| 加载机制 | 延迟加载               | 预加载+缓存                    |  
-| 线程安全 | 否                  | 是                         |  
-| 性能   | 较低                 | 较高                        |  
-| 适用场景 | 标准JDK环境            | Spring生态                  |  
+### 5.2 性能优化
 
-## 5. 实际应用示例
+**Spring SPI缓存配置**：
+```java
+// 带缓存的加载方式
+List<MyService> services = SpringFactoriesLoader
+    .loadFactories(MyService.class, classLoader);
+```
 
-### 5.1 Spring Boot 自动配置
+**JDK SPI优化方案**：
+```java
+// 单例缓存实现
+private static final List<Serializer> SERIALIZERS = StreamSupport
+    .stream(ServiceLoader.load(Serializer.class).spliterator(), false)
+    .collect(Collectors.toList());
+```
 
-Spring Boot大量使用SPI机制实现自动配置：
+## 6. 常见问题
 
-```properties  
-# spring-boot-autoconfigure/META-INF/spring.factories  
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\  
-  org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\  org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration  
-```  
+### 6.1 加载失败排查
 
-### 5.2 自定义SPI实现
+1. **检查文件路径**：
+   ```bash
+   # JDK SPI
+   ls META-INF/services/
 
-**步骤1**：定义接口
+   # Spring SPI
+   ls META-INF/spring.factories
+   ```
 
-```java  
-public interface CacheProvider {  
-    void put(String key, Object value);    Object get(String key);}  
-```  
+2. **验证类加载器**：
+   ```java
+   Thread.currentThread().getContextClassLoader().getResource("META-INF/services/...");
+   ```
 
-**步骤2**：创建实现
+### 6.2 实现冲突解决
 
-```java  
-public class RedisCache implements CacheProvider {  
-    // 实现方法  
-}  
-```  
+**方案1：条件过滤**
+```java
+ServiceLoader.load(Filter.class)
+    .stream()
+    .filter(p -> !p.type().isAnnotationPresent(Deprecated.class))
+    .map(ServiceLoader.Provider::get)
+    .forEach(...);
+```
 
-**步骤3**：配置spring.factories
-
-```properties  
-com.example.CacheProvider=com.example.RedisCache  
-```  
-
-**步骤4**：加载使用
-
-```java  
-List<CacheProvider> providers = SpringFactoriesLoader.loadFactories(  
-    CacheProvider.class, classLoader);  
-```  
-
-## 6. 最佳实践
-
-1. **接口设计原则**
-    - 保持接口简洁
-    - 避免频繁变更接口
-    - 明确契约和预期行为
-
-2. **实现类设计**
-    - 提供无参构造函数
-    - 避免依赖注入（除非明确支持）
-    - 线程安全实现
-
-3. **性能优化**
-    - 对于Spring SPI，合理使用缓存
-    - 避免在热路径中频繁加载
-
-4. **错误处理**
-    - 提供有意义的错误信息
-    - 处理实现类加载失败的情况
-
-5. **文档规范**
-    - 明确记录接口契约
-    - 提供实现示例
-    - 说明配置方式
-
-## 7. 总结
-
-SPI机制是Java生态中重要的扩展点设计模式，Spring在JDK SPI基础上进行了优化和改进：
-
-1. **JDK SPI**：
-    - 标准实现，适合基础扩展场景
-    - 简单但功能有限
-
-2. **Spring SPI**：
-    - 增强的加载机制
-    - 更好的性能和线程安全
-    - 深度集成Spring生态
-
-在实际开发中，应根据具体场景选择合适的SPI实现方式。对于Spring项目，优先使用`SpringFactoriesLoader`；对于纯Java项目，可使用标准JDK
-SPI。
+**方案2：优先级排序**
+```java
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class PrimaryFilter implements Filter {}
+```

@@ -1,97 +1,198 @@
-## 1. SpringBoot 的 Listener 机制与事件
+---
+title: Spring Boot事件监听机制深度解析
+date: {{ .Date }}
+tags: [Spring Boot, 事件机制, 监听器]
+description: 全面剖析Spring Boot事件发布与监听实现原理，包含核心事件、自定义扩展和最佳实践
+toc: true
+---
 
-Spring Boot的事件机制是基于Spring框架的`ApplicationEvent`和`ApplicationListener`接口扩展而来，提供了应用生命周期中各个阶段的事件通知。
+## 1. 核心机制 
 
-### 1.1. 事件发布机制源码分析
+### 1.1 事件发布流程
 
-Spring Boot事件发布的核心是`SpringApplicationRunListeners`类，它封装了所有的`SpringApplicationRunListener`实现：
-
-```java  
-// SpringApplicationRunListeners.java 核心源码  
-class SpringApplicationRunListeners {  
-    private final List<SpringApplicationRunListener> listeners;        SpringApplicationRunListeners(Collection<? extends SpringApplicationRunListener> listeners) {  
-        this.listeners = new ArrayList<>(listeners);    }    // 发布应用启动事件  
-    void starting(ConfigurableBootstrapContext bootstrapContext, Class<?> mainApplicationClass) {        doWithListeners("spring.boot.application.starting",            (listener) -> listener.starting(bootstrapContext, mainApplicationClass));  
-    }    // 发布环境准备事件  
-    void environmentPrepared(ConfigurableBootstrapContext bootstrapContext, ConfigurableEnvironment environment) {        doWithListeners("spring.boot.application.environment-prepared",            (listener) -> listener.environmentPrepared(bootstrapContext, environment));    }    // 发布上下文准备事件  
-    void contextPrepared(ConfigurableApplicationContext context) {        doWithListeners("spring.boot.application.context-prepared",            (listener) -> listener.contextPrepared(context));  
-    }    // 发布上下文加载事件  
-    void contextLoaded(ConfigurableApplicationContext context) {        doWithListeners("spring.boot.application.context-loaded",            (listener) -> listener.contextLoaded(context));  
-    }    // 发布应用启动完成事件  
-    void started(ConfigurableApplicationContext context, Duration timeTaken) {        doWithListeners("spring.boot.application.started",            (listener) -> listener.started(context, timeTaken));  
-    }    // 发布应用就绪事件  
-    void ready(ConfigurableApplicationContext context, Duration timeTaken) {        doWithListeners("spring.boot.application.ready",            (listener) -> listener.ready(context, timeTaken));  
-    }    // 发布应用失败事件  
-    void failed(ConfigurableApplicationContext context, Throwable exception) {        doWithListeners("spring.boot.application.failed",            (listener) -> callFailedListener(listener, context, exception));  
-    }}  
-```  
-
-### 1.2. 核心事件与触发时机
-
-| 事件类型                                  | 触发时机        | 源码位置                         | 用途      |  
-|---------------------------------------|-------------|------------------------------|---------|  
-| `ApplicationStartingEvent`            | 启动开始        | `SpringApplication.run()` 开始 | 进行早期初始化 |  
-| `ApplicationEnvironmentPreparedEvent` | 环境准备完成      | `prepareEnvironment()` 方法中   | 配置环境变量  |  
-| `ApplicationContextInitializedEvent`  | 上下文初始化      | `prepareContext()` 方法中       | 初始化操作   |  
-| `ApplicationPreparedEvent`            | Bean 定义加载完成 | `prepareContext()` 方法末尾      | 预处理     |  
-| `ApplicationStartedEvent`             | 上下文刷新完成     | `refreshContext()` 之后        | 启动后处理   |  
-| `ApplicationReadyEvent`               | 应用准备就绪      | `callRunners()` 之后           | 最终处理    |  
-| `ApplicationFailedEvent`              | 启动失败        | 捕获异常处理中                      | 失败处理    |  
-
-### 1.3. 事件监听器实现方式
-
-#### 1.3.1 实现ApplicationListener接口
-
-```java  
-@Component  
-public class MyListener implements ApplicationListener<ApplicationStartedEvent> {  
-    @Override    public void onApplicationEvent(ApplicationStartedEvent event) {        // 处理逻辑  
-    }}  
-```  
-
-#### 1.3.2 使用@EventListener注解
-
-```java  
-@Component  
-public class AnnotationBasedEventListener {  
-    @EventListener    public void handleApplicationStarted(ApplicationStartedEvent event) {        // 处理逻辑  
-    }        @EventListener(condition = "#event.source.profiles.contains('dev')")  
-    public void handleConditionalEvent(ApplicationEnvironmentPreparedEvent event) {        // 条件处理逻辑  
-    }}  
-```  
-
-#### 1.3.3 监听器注册源码分析
-
-```java  
-// EventPublishingRunListener.java 核心源码  
-public class EventPublishingRunListener implements SpringApplicationRunListener {  
-    private final SpringApplication application;    private final String[] args;    private final SimpleApplicationEventMulticaster initialMulticaster;  
-    public EventPublishingRunListener(SpringApplication application, String[] args) {        this.application = application;        this.args = args;        // 创建事件广播器  
-        this.initialMulticaster = new SimpleApplicationEventMulticaster();        // 注册应用中的所有监听器  
-        for (ApplicationListener<?> listener : application.getListeners()) {            this.initialMulticaster.addApplicationListener(listener);        }    }        @Override  
-    public void starting(ConfigurableBootstrapContext bootstrapContext, Class<?> mainApplicationClass) {        // 发布ApplicationStartingEvent事件  
-        this.initialMulticaster.multicastEvent(                new ApplicationStartingEvent(bootstrapContext, this.application, this.args));    }    // 其他事件发布方法...  
-}  
-```  
-
-### 1.4. 自定义事件示例
-
-```java  
-// 1. 定义自定义事件  
-public class MyCustomEvent extends ApplicationEvent {  
-    private final String message;        public MyCustomEvent(Object source, String message) {  
-        super(source);        this.message = message;    }        public String getMessage() {  
-        return message;    }}  
-  
-// 2. 发布事件  
-@Component  
-public class MyEventPublisher {  
-    private final ApplicationEventPublisher publisher;        public MyEventPublisher(ApplicationEventPublisher publisher) {  
-        this.publisher = publisher;    }        public void publishEvent(String message) {  
-        publisher.publishEvent(new MyCustomEvent(this, message));    }}  
-  
-// 3. 监听事件  
-@Component  
-public class MyEventListener {  
-    @EventListener    public void handleMyCustomEvent(MyCustomEvent event) {        System.out.println("Received custom event: " + event.getMessage());    }}  
+```mermaid
+sequenceDiagram
+    participant App as SpringApplication
+    participant Multicaster
+    participant Listener
+    
+    App->>Multicaster: 发布事件
+    Multicaster->>Listener: 通知监听器
+    Listener->>Listener: 处理事件
+    Listener-->>App: 返回结果(可选)
 ```
+
+<div class="grid cards" markdown>
+
+-   **核心组件**
+    - ApplicationEventPublisher
+    - ApplicationEventMulticaster
+    - SmartApplicationListener
+
+-   **关键特性**
+    - 同步/异步发布
+    - 条件过滤
+    - 顺序控制
+
+</div>
+
+## 2. 生命周期事件
+
+### 2.1 标准事件序列
+
+| 事件类型 | 触发阶段 | 典型用途 |
+|---------|---------|---------|
+| `ApplicationStartingEvent` | 启动开始时 | 初始化日志系统 |
+| `ApplicationEnvironmentPreparedEvent` | 环境准备后 | 修改配置属性 |
+| `ApplicationPreparedEvent` | Bean加载完成 | 预处理Bean定义 |
+| `ApplicationStartedEvent` | 上下文刷新后 | 启动后台服务 |
+| `ApplicationReadyEvent` | 应用就绪时 | 健康检查注册 |
+
+<details>
+<summary>点击查看事件发布源码</summary>
+
+```java
+// SpringApplicationRunListeners核心逻辑
+void starting(ConfigurableBootstrapContext bootstrapContext) {
+    doWithListeners((listener) -> listener.starting(bootstrapContext));
+}
+```
+</details>
+
+## 3. 监听器实现
+
+### 3.1 注册方式对比
+
+**接口实现方式**：
+```java
+@Component
+public class TraditionalListener implements ApplicationListener<ApplicationReadyEvent> {
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
+        // 处理逻辑
+    }
+}
+```
+
+**注解驱动方式**：
+```java
+@Component
+public class AnnotationListener {
+    @EventListener(condition = "#event.source.activeProfiles.contains('prod')")
+    public void handleReady(ApplicationReadyEvent event) {
+        // 条件处理
+    }
+}
+```
+
+## 4. 自定义扩展
+
+### 4.1 自定义事件示例
+
+```mermaid
+classDiagram
+    class CustomEvent {
+        +String message
+        +getMessage()
+    }
+    CustomEvent --|> ApplicationEvent
+```
+
+**实现步骤**：
+1. 定义事件类
+```java
+public class AuditEvent extends ApplicationEvent {
+    private final String action;
+    // 构造器和方法
+}
+```
+
+2. 发布事件
+```java
+@Service
+public class AuditService {
+    private final ApplicationEventPublisher publisher;
+    
+    public void logAction(String action) {
+        publisher.publishEvent(new AuditEvent(this, action));
+    }
+}
+```
+
+3. 监听处理
+```java
+@Component
+public class AuditListener {
+    @Async
+    @EventListener
+    public void handleAudit(AuditEvent event) {
+        // 异步处理审计日志
+    }
+}
+```
+
+## 5. 高级特性
+
+### 5.1 异步事件处理
+
+```properties
+# application.properties
+spring.task.execution.pool.core-size=4
+spring.task.execution.pool.max-size=8
+```
+
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+    @Override
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.initialize();
+        return executor;
+    }
+}
+```
+
+### 5.2 监听器排序
+
+```java
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@Component
+public class PriorityListener implements ApplicationListener<ApplicationEvent> {
+    // 优先执行
+}
+```
+
+## 6. 最佳实践
+
+### 6.1 使用准则
+
+1. **轻量处理**：
+   ```java
+   @EventListener
+   public void handleEvent(Event event) {
+       // 快速处理，避免阻塞
+       eventQueue.add(event);
+   }
+   ```
+
+2. **异常隔离**：
+   ```java
+   @EventListener
+   public void safeHandle(Event event) {
+       try {
+           // 业务逻辑
+       } catch (Exception e) {
+           log.error("处理失败", e);
+       }
+   }
+   ```
+
+3. **条件过滤**：
+   ```java
+   @EventListener(condition = "#event.type == T(com.example.EventType).IMPORTANT")
+   public void handleImportant(Event event) {
+       // 重要事件处理
+   }
+   ```

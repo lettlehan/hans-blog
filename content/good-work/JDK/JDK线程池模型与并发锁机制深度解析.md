@@ -1,4 +1,12 @@
-## 1. 线程池核心模型
+---
+title: JDK线程池模型与并发锁机制深度解析
+date: {{ .Date }}
+tags: [Java, 并发编程, 线程池, 锁机制]
+description: 全面解析JDK线程池实现原理与并发锁机制，包含核心模型、锁升级、性能调优与最佳实践
+toc: true
+---
+
+## 1. 核心模型
 
 ### 1.1 线程池架构
 
@@ -11,196 +19,130 @@ graph TD
     W -->|任务完成| Q  
 ```  
 
-### 1.2 核心参数说明
+### 1.2 核心参数配置
 
-| 参数名                      | 作用       | 推荐设置原则                   |  
-|--------------------------|----------|--------------------------|  
-| corePoolSize             | 核心线程数    | CPU密集型：N+1<br>IO密集型：2N+1 |  
-| maximumPoolSize          | 最大线程数    | 核心线程数的2-3倍               |  
-| keepAliveTime            | 空闲线程存活时间 | 30-60秒                   |  
-| workQueue                | 任务队列     | 根据业务特点选择                 |  
-| threadFactory            | 线程创建工厂   | 自定义命名和优先级                |  
-| rejectedExecutionHandler | 拒绝策略     | 根据业务容忍度选择                |  
+<div class="grid cards" markdown>
 
-## 2. 锁升级机制
+-   **基本参数**
+    - corePoolSize: CPU密集型N+1
+    - maximumPoolSize: 核心线程2-3倍
+    - keepAliveTime: 30-60秒
+
+-   **高级配置**
+    - workQueue: ArrayBlockingQueue
+    - threadFactory: 自定义命名
+    - handler: 拒绝策略
+
+</div>
+
+## 2. 锁机制详解
 
 ### 2.1 锁状态转换
 
 ```mermaid  
 stateDiagram-v2  
     [*] --> 无锁  
-    无锁 --> 偏向锁: 第一个线程访问  
-    偏向锁 --> 轻量级锁: 出现竞争  
-    轻量级锁 --> 重量级锁: 自旋失败(默认10次)  
+    无锁 --> 偏向锁: 首次访问  
+    偏向锁 --> 轻量级锁: 竞争发生  
+    轻量级锁 --> 重量级锁: 自旋失败  
     重量级锁 --> 无锁: 释放  
 ```  
 
-### 2.2 关键参数
+### 2.2 JVM参数优化
 
-```bash  
--XX:+UseBiasedLocking          # 启用偏向锁(JDK15后默认禁用)  
--XX:BiasedLockingStartupDelay=0 # 偏向锁启动延迟(ms)  
--XX:PreBlockSpin=10            # 自旋次数阈值  
-```  
+```bash
+# 偏向锁配置
+-XX:+UseBiasedLocking  
+-XX:BiasedLockingStartupDelay=0
 
-## 3. 项目应用场景
+# 自旋优化  
+-XX:PreBlockSpin=10
+```
 
-### 3.1 电商系统案例
+## 3. 实战应用
 
-**场景**：订单支付异步处理
+### 3.1 电商支付系统
 
-```java  
-// 支付结果处理线程池  
-ThreadPoolExecutor paymentExecutor = new ThreadPoolExecutor(
-        8,  // 8核CPU  
-        32, // 峰值3倍  
-        60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000), new NamedThreadFactory("payment-process"), new PaymentRejectPolicy() // 记录日志并降级处理  
-);  
-```  
+```java
+// 线程池配置
+ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    8, 32, 60, TimeUnit.SECONDS,
+    new ArrayBlockingQueue<>(1000),
+    new NamedThreadFactory("payment"),
+    new PaymentRejectHandler()
+);
 
-**锁应用**：
+// 库存锁实现
+private final Lock stockLock = new ReentrantLock(true);
 
-```java  
-// 库存扣减使用ReentrantLock  
-private final Lock stockLock = new ReentrantLock(true); // 公平锁  
-
-public boolean reduceStock(Long itemId, int num) {
+public void processPayment(Order order) {
     stockLock.lock();
-    try {        // 扣减库存逻辑  
+    try {
+        // 扣减库存逻辑
     } finally {
         stockLock.unlock();
     }
-}  
-```  
+}
+```
 
-### 3.2 金融交易系统
+<details>
+<summary>点击查看监控指标</summary>
 
-**场景**：批量交易处理
-
-```java  
-// 交易处理线程池（无界队列）  
-ExecutorService tradeExecutor = Executors.newFixedThreadPool(
-        Runtime.getRuntime().availableProcessors() * 2, new TradeThreadFactory());
-
-// 使用StampedLock优化读多写少场景  
-private final StampedLock sl = new StampedLock();
-
-public double readAccountBalance(long accountId) {
-    long stamp = sl.tryOptimisticRead();    // 读取操作...  
-    if (!sl.validate(stamp)) {
-        stamp = sl.readLock();
-        try {            // 重新读取  
-        } finally {
-            sl.unlockRead(stamp);
-        }
-    }
-    return balance;
-}  
-```  
+| 指标 | 监控方式 | 阈值 |
+|------|---------|------|
+| 活跃线程 | getActiveCount() | ≤最大线程数 |
+| 队列堆积 | getQueue().size() | ≤队列容量 |
+</details>
 
 ## 4. 性能调优
 
-### 4.1 线程池监控指标
+### 4.1 线程池优化策略
 
-| 指标名称   | 监控方式                       | 健康阈值              |  
-|--------|----------------------------|-------------------|  
-| 活跃线程数  | getActiveCount()           | ≤ maximumPoolSize |  
-| 队列堆积数  | getQueue().size()          | ≤ queueCapacity   |  
-| 最大执行时间 | 自定义AOP监控                   | P99 < 1s          |  
-| 拒绝任务数  | 扩展RejectedExecutionHandler | 报警阈值 > 0          |  
+1. **IO密集型应用**：
+   ```java
+   // 增大线程数
+   int poolSize = Runtime.getRuntime().availableProcessors() * 3;
+   ```
 
-### 4.2 锁竞争优化
+2. **CPU密集型应用**：
+   ```java
+   // 使用无界队列
+   new LinkedBlockingQueue<>()
+   ```
 
-1. **减小锁粒度**：
-   ```java  
-   // 粗粒度锁  
-   synchronized(this) { /* 整个方法 */ }   // 细粒度锁  
-   synchronized(userId.intern()) { /* 按用户ID锁定 */ }  
-   ```  
-2. **锁分离技术**：
-   ```java  
-   // 读写锁分离  
-   private final ReadWriteLock rwLock = new ReentrantReadWriteLock();  
-   ```  
+### 4.2 锁竞争解决方案
 
-## 5. 常见问题排查
+```java
+// 读写锁分离
+private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-### 5.1 线程池问题
-
-**现象**：任务处理延迟高
-
-- 检查队列堆积：`executor.getQueue().size()`
-- 分析线程栈：`jstack <pid>`
-- 解决方案：调整队列容量或最大线程数
-
-### 5.2 锁竞争问题
-
-**诊断命令**：
-
-```bash  
-jcmd <pid> Thread.print -l# 查找BLOCKED状态线程  
-```  
-
-**优化方案**：
-
-1. 使用`jstack`分析锁持有情况
-2. 考虑改用`ConcurrentHashMap`等并发集合
-3. 评估是否可用无锁编程
-
-## 6. 最佳实践
-
-### 6.1 线程池使用原则
-
-1. **明确任务性质**：
-    - CPU密集型：小线程池+无界队列
-    - IO密集型：大线程池+有界队列
-
-2. **优雅关闭**：
-   ```java  
-   executor.shutdown();  
-   if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {       executor.shutdownNow();   }  
-   ```  
-
-### 6.2 锁使用准则
-
-1. **锁顺序**：
-   ```java  
-   // 定义全局锁顺序  
-   private static final Object LOCK_ORDER_1 = new Object();  
-   private static final Object LOCK_ORDER_2 = new Object();   // 始终按相同顺序获取锁  
-   synchronized(LOCK_ORDER_1) {  
-       synchronized(LOCK_ORDER_2) {           // ...       }   }  
-   ```  
-2. **锁超时**：
-   ```java  
-   if (lock.tryLock(100, TimeUnit.MILLISECONDS)) {  
-       try { /* ... */ }       finally { lock.unlock(); }  
-   }  
-   ```  
-
-## 7. 高级特性
-
-### 7.1 ForkJoinPool
-
-**适用场景**：可拆分计算任务
-
-```java  
-public class FibonacciTask extends RecursiveTask<Long> {
-    protected Long compute() {        // 分治算法实现  
+public void updateData() {
+    rwLock.writeLock().lock();
+    try {
+        // 更新操作
+    } finally {
+        rwLock.writeLock().unlock();
     }
 }
+```
 
-ForkJoinPool pool = new ForkJoinPool(4);  
-pool.
+## 5. 高级特性
 
-invoke(new FibonacciTask(30));  
-```  
+### 5.1 锁性能对比
 
-### 7.2 锁性能对比
+<div class="grid cards" markdown>
 
-| 锁类型           | 适用场景 | 吞吐量 |  
-|---------------|------|-----|  
-| synchronized  | 简单同步 | 中等  |  
-| ReentrantLock | 复杂条件 | 高   |  
-| StampedLock   | 读多写少 | 极高  |  
-| ReadWriteLock | 读写分离 | 高   |
+-   **synchronized**
+    - 简单同步
+    - 中等吞吐
+
+-   **ReentrantLock**
+    - 条件变量
+    - 高吞吐
+
+-   **StampedLock**
+    - 读多写少
+    - 极高吞吐
+
+</div>
+
