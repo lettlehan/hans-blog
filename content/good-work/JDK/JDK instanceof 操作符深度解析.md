@@ -1,6 +1,7 @@
 ---
 title: JDK instanceof 操作符深度解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Java, JDK, 模式匹配]
 description: 全面解析Java instanceof操作符及其演进，包含传统用法、模式匹配、性能分析和最佳实践
 ---

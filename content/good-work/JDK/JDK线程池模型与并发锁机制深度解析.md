@@ -1,6 +1,7 @@
 ---
 title: JDK线程池模型与并发锁机制深度解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Java, 并发编程, 线程池, 锁机制]
 description: 全面解析JDK线程池实现原理与并发锁机制，包含核心模型、锁升级、性能调优与最佳实践
 toc: true

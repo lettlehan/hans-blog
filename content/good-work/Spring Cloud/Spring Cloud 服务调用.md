@@ -1,6 +1,7 @@
 ---
 title: Spring Cloud服务调用权威指南
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring Cloud, 微服务, Feign, WebClient]
 description: 全面解析Spring Cloud服务调用方案，包含同步/异步调用实现与最佳实践
 toc: true

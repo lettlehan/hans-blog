@@ -1,6 +1,7 @@
 ---
 title: JDK 17 新特性深度解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Java, JDK17, 新特性]
 description: 全面解析JDK 17核心特性与改进，包含语言增强、API更新、性能优化等内容
 toc: true

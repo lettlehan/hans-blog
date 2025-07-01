@@ -1,6 +1,7 @@
 ---
 title: Spring Cloud核心组件全解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring Cloud, 微服务, 服务治理]
 description: 一站式掌握Spring Cloud核心组件，包含服务注册发现、负载均衡、服务调用和熔断限流
 toc: true

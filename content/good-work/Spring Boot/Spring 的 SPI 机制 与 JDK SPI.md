@@ -1,6 +1,7 @@
 ---
 title: Spring与JDK SPI机制深度解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring, JDK, SPI, 设计模式]
 description: 全面对比分析JDK SPI与Spring SPI实现原理、应用场景和最佳实践
 toc: true

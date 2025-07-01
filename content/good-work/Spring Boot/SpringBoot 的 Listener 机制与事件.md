@@ -1,6 +1,7 @@
 ---
 title: Spring Boot事件监听机制深度解析
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring Boot, 事件机制, 监听器]
 description: 全面剖析Spring Boot事件发布与监听实现原理，包含核心事件、自定义扩展和最佳实践
 toc: true

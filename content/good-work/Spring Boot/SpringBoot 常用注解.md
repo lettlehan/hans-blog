@@ -1,6 +1,7 @@
 ---
 title: Spring Boot核心注解原理剖析
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring Boot, 注解, 源码分析]
 description: 深度解析Spring Boot核心注解的实现原理与工作机制
 toc: true

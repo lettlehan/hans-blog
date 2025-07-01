@@ -1,6 +1,7 @@
 ---
 title: Spring Cloud负载均衡权威指南
 date: {{ .Date }}
+author: 韓小han
 tags: [Spring Cloud, 负载均衡, 微服务]
 description: 深度解析Spring Cloud负载均衡机制，包含Ribbon与LoadBalancer对比及生产实践
 toc: true
