@@ -56,9 +56,6 @@ protected Object doCreateBean(String beanName, RootBeanDefinition mbd, Object[] 
 }
 ```
 
-<details>
-<summary>点击查看初始化细节</summary>
-
 **initializeBean()核心逻辑**：
 ```java
 protected Object initializeBean(String beanName, Object bean, RootBeanDefinition mbd) {
@@ -116,7 +113,7 @@ public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, S
 - 配置属性的注入
 - 自定义的Bean增强逻辑
 
-[[Bean 前置处理器]]
+  [[Spring Bean前置处理器详解]]    
 **3. 初始化方法**
 
 `invokeInitMethods()`方法按顺序调用初始化方法：
@@ -162,8 +159,7 @@ public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, St
 - 缓存代理的生成
 - 其他自定义的Bean包装或代理逻辑
 
-[[Bean 后置处理器]]
-</details>
+[[Spring Bean后置处理器详解]]   
 
 ## 3. 循环依赖解决方案
 
