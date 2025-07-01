@@ -1,5 +1,5 @@
 ---
-title: Spring Bean生命周期与循环依赖深度解析
+title: Spring Bean生命周期
 date: {{ .Date }}
 tags: [Spring, Bean生命周期, 循环依赖]
 description: 全面剖析Spring Bean创建过程与循环依赖解决方案，包含源码级分析和最佳实践
