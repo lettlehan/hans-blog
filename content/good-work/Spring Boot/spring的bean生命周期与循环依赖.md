@@ -73,6 +73,96 @@ protected Object initializeBean(String beanName, Object bean, RootBeanDefinition
     return wrappedBean;
 }
 ```
+
+**1. Aware接口回调**
+
+Spring通过`invokeAwareMethods()`方法执行Aware接口的回调：
+```java
+private void invokeAwareMethods(String beanName, Object bean) {
+    if (bean instanceof BeanNameAware) {
+        ((BeanNameAware) bean).setBeanName(beanName);
+    }
+    if (bean instanceof BeanClassLoaderAware) {
+        ((BeanClassLoaderAware) bean).setBeanClassLoader(getBeanClassLoader());
+    }
+    if (bean instanceof BeanFactoryAware) {
+        ((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.this);
+    }
+}
+```
+主要处理以下Aware接口：
+- BeanNameAware：注入Bean的名称
+- BeanClassLoaderAware：注入类加载器
+- BeanFactoryAware：注入BeanFactory实例
+
+**2. 前置处理**
+
+通过`applyBeanPostProcessorsBeforeInitialization()`方法执行所有BeanPostProcessor的前置处理：
+```java
+public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName) {
+    Object result = existingBean;
+    for (BeanPostProcessor processor : getBeanPostProcessors()) {
+        Object current = processor.postProcessBeforeInitialization(result, beanName);
+        if (current == null) {
+            return result;
+        }
+        result = current;
+    }
+    return result;
+}
+```
+常见的前置处理：
+- @PostConstruct注解的处理
+- 配置属性的注入
+- 自定义的Bean增强逻辑
+
+[[Bean 前置处理器]]
+**3. 初始化方法**
+
+`invokeInitMethods()`方法按顺序调用初始化方法：
+```java
+protected void invokeInitMethods(String beanName, Object bean, RootBeanDefinition mbd) {
+    // 1. 处理InitializingBean接口
+    if (bean instanceof InitializingBean) {
+        ((InitializingBean) bean).afterPropertiesSet();
+    }
+    
+    // 2. 调用自定义init-method
+    if (mbd != null && bean.getClass() != NullBean.class) {
+        String initMethodName = mbd.getInitMethodName();
+        if (StringUtils.hasLength(initMethodName)) {
+            invokeCustomInitMethod(beanName, bean, mbd);
+        }
+    }
+}
+```
+初始化顺序：
+1. InitializingBean接口的afterPropertiesSet()方法
+2. XML配置的init-method或@Bean注解指定的初始化方法
+
+**4. 后置处理**
+
+最后通过`applyBeanPostProcessorsAfterInitialization()`执行后置处理：
+```java
+public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName) {
+    Object result = existingBean;
+    for (BeanPostProcessor processor : getBeanPostProcessors()) {
+        Object current = processor.postProcessAfterInitialization(result, beanName);
+        if (current == null) {
+            return result;
+        }
+        result = current;
+    }
+    return result;
+}
+```
+主要用途：
+- AOP代理的创建
+- @Bean方法返回值的处理
+- 缓存代理的生成
+- 其他自定义的Bean包装或代理逻辑
+
+[[Bean 后置处理器]]
 </details>
 
 ## 3. 循环依赖解决方案
