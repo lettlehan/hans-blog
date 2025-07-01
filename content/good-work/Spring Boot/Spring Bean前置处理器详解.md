@@ -1,6 +1,6 @@
 ---
 title: Spring Bean前置处理器(BeanPostProcessor)详解
-date: 2023-07-15
+date: 2023-07-1
 tags: [Spring, BeanPostProcessor, Bean生命周期]
 description: 深入解析Spring BeanPostProcessor机制，包含源码分析、应用场景和最佳实践
 toc: true

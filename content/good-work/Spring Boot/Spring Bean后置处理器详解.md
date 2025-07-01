@@ -1,6 +1,6 @@
 ---
 title: Spring Bean后置处理器详解
-date: 2023-07-16
+date: 2023-07-1
 tags: [Spring, BeanPostProcessor, Bean生命周期, 后置处理]
 description: 深入解析Spring Bean后置处理机制，包含源码分析、应用场景和最佳实践
 toc: true
