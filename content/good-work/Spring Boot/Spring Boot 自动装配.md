@@ -30,7 +30,102 @@ flowchart LR
 - **可覆盖性**：默认配置可被自定义配置覆盖
 - **模块化**：通过Starter实现功能模块化
 
-## 2. 自动装配原理
+## 2. 约定优于配置
+
+### 2.1 概念解释
+
+"约定优于配置"（Convention over Configuration）是一种软件设计范式，旨在减少开发者需要做出的决定数量，从而简化软件开发过程。这一理念的核心是：
+
+> 如果存在一种通常被接受的实现方式，那么系统应该默认采用这种方式，而不需要开发者明确指定。
+
+```mermaid
+flowchart LR
+    A[传统方式] --> B{需要配置?}
+    B -->|是| C[编写配置]
+    B -->|否| D[使用默认值]
+    
+    E[约定优于配置] --> F{符合约定?}
+    F -->|是| G[自动工作]
+    F -->|否| H[少量配置]
+```
+
+### 2.2 约定优于配置的优势
+
+1. **减少配置代码量**：遵循约定可以显著减少配置文件的大小和数量
+2. **提高开发效率**：开发者只需关注非常规的部分，不必为常见场景编写配置
+3. **降低学习成本**：一旦掌握了框架的约定，可以快速上手新项目
+4. **增强可维护性**：代码库更加一致，更容易理解和维护
+5. **减少决策疲劳**：减少开发者需要做出的决策数量
+
+### 2.3 Spring Boot中的约定示例
+
+| 领域 | 约定 | 配置方式（如需覆盖） |
+|------|------|-------------------|
+| 应用配置文件 | `application.properties`/`application.yml` | `spring.config.name` |
+| 静态资源 | `/static`, `/public`, `/resources`, `/META-INF/resources` | `spring.web.resources.static-locations` |
+| 模板文件 | `/templates` | `spring.thymeleaf.prefix` |
+| 主类 | 包含`main`方法且带有`@SpringBootApplication`的类 | 自定义`SpringApplication` |
+| Bean命名 | 类名首字母小写 | `@Bean(name="customName")` |
+| 配置属性 | 遵循特定前缀的命名规则 | `@ConfigurationProperties` |
+
+### 2.4 与自动装配的关系
+
+自动装配是"约定优于配置"理念在Spring Boot中的核心实现机制：
+
+1. **默认配置**：Spring Boot为常用功能提供了默认配置
+2. **智能检测**：根据类路径、环境等自动决定使用哪些配置
+3. **优雅降级**：当无法确定最佳配置时，采用最安全的默认值
+4. **显式覆盖**：允许开发者通过配置属性或自定义Bean覆盖默认行为
+
+```java
+// 示例：约定优于配置在数据源配置中的应用
+@Configuration
+@ConditionalOnClass(DataSource.class)
+public class DataSourceAutoConfiguration {
+    
+    // 约定：如果存在HikariCP，则默认使用它
+    @Configuration
+    @ConditionalOnClass(HikariDataSource.class)
+    static class HikariDatasourceConfiguration {
+        // 默认配置
+        @Bean
+        @ConditionalOnMissingBean
+        public DataSource dataSource() {
+            return new HikariDataSource();
+        }
+    }
+    
+    // 约定：如果不存在HikariCP但存在Tomcat连接池，则使用Tomcat连接池
+    @Configuration
+    @ConditionalOnClass(org.apache.tomcat.jdbc.pool.DataSource.class)
+    @ConditionalOnMissingBean(DataSource.class)
+    static class TomcatDataSourceConfiguration {
+        // 默认配置
+        @Bean
+        public DataSource dataSource() {
+            return new org.apache.tomcat.jdbc.pool.DataSource();
+        }
+    }
+}
+```
+
+### 2.5 实际应用中的平衡
+
+虽然"约定优于配置"带来了诸多好处，但在实际应用中需要注意：
+
+1. **了解约定**：开发者需要了解框架的默认约定，否则可能导致困惑
+2. **适度配置**：某些情况下，显式配置比隐式约定更清晰
+3. **透明性**：良好的文档和调试工具对于理解"幕后发生的事情"至关重要
+4. **灵活性**：框架应提供覆盖默认约定的简便方法
+
+Spring Boot通过以下方式实现了这种平衡：
+
+- 提供详细的参考文档
+- 支持`debug=true`模式查看自动装配报告
+- 允许通过属性文件、Java配置等多种方式覆盖默认行为
+- 保持核心API的稳定性和一致性
+
+## 3. 自动装配原理
 
 ### 2.1 核心注解
 
