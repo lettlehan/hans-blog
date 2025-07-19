@@ -119,10 +119,6 @@ Spring框架内部大量使用BeanPostProcessor来实现各种功能：
     - AutowiredAnnotationBeanPostProcessor
     - 处理@Autowired、@Value和@Inject注解
 
--   **AOP代理创建**
-    - AbstractAutoProxyCreator
-    - 为Bean创建AOP代理对象
-
 -   **初始化注解处理**
     - InitDestroyAnnotationBeanPostProcessor
     - 处理@PostConstruct和@PreDestroy注解
